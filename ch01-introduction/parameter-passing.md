@@ -30,8 +30,6 @@ Consider the following program:
 ```cpp
 #include <iostream>
 
-using namespace std;
-
 double average(double a, double b);
 
 int main() {
@@ -77,7 +75,7 @@ Here, `a` and `b` are now aliases for whatever arguments are provided.
 Let us consider a new function.
 
 ```cpp
-string getRandomItem(vector<string> arr);
+std::string getRandomItem(std::vector<std::string> arr);
 ```
 
 Hopefully, at this point, it should be apparent that we are not using the
@@ -97,7 +95,7 @@ the vector being passed in. We do not expect the underlying data of the vector
 to change in any way. So we would change its function signature like so
 
 ```cpp
-string getRandomItem(const vector<string> &arr);
+std::string getRandomItem(const std::vector<std::string> &arr);
 ```
 
 ## Call-by-rvalue-reference
@@ -115,7 +113,7 @@ a value that is not associated with an object.
 For example consider the following code.
 
 ```cpp
-vector<string> arr(3); // arr is an lvalue, 3 is an rvalue
+std::vector<std::string> arr(3); // arr is an lvalue, 3 is an rvalue
 
 const int x = 2; // x is an immutable lvalue, 2 is an rvalue
 
@@ -123,9 +121,9 @@ int y; // y is an lvalue
 
 int z = x + y; // z is an lvalue, the expression (x + y) is an rvalue
 
-string str = "foo"; // str is an lvalue, "foo" is an rvalue
+std::string str = "foo"; // str is an lvalue, "foo" is an rvalue
 
-vector<string> *ptr = &arr; // *ptr is an lvalue, &arr is an rvalue
+std::vector<std::string> *ptr = &arr; // *ptr is an lvalue, &arr is an rvalue
 ```
 
 Now, a **reference type** allows us to define a new name for an existing value.
