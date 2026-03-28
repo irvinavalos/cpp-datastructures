@@ -1,3 +1,4 @@
+theme: jekyll-theme-minimal
 plugins:
   - jekyll-relative-links
 relative-links:
@@ -5,3 +6,6 @@ relative-links:
   collections: true
 include:
   - README.md
+
+title: C++ Data Structures
+description: Notes and implementations on data structures in C++
