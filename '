@@ -70,24 +70,20 @@ following way
 void swap(double &a, double &b);
 ```
 
-Here, `&a` and `&b` are now aliases for whatever arguments are provided.
+Here, `a` and `b` are now aliases for whatever arguments are provided.
 
 Let us consider a new function.
 
 ```cpp
-#include <string>
-#include <vector>
-
-using namespace std;
-
-string getRandomItem(vector<string> strArr);
+std::string getRandomItem(std::vector<std::string> arr);
 ```
 
 Hopefully, at this point, it should be apparent that we are not using the
 correct passing convention. Why? A call by value would copy the argument
-`strArr` which could be of size 1, 100, 10000, etc. So this could potentially be
-an expensive operation. How would we mitigate this? We would pass the argument
-by reference. But we must ask ourselves: *Do we need to mutate the argument?*
+`arr` which could be of size 1, 100, 10000, etc. So this could potentially be a
+expensive operation. How would we mitigate this? We would pass the argument
+by reference. But now we must ask ourselves:
+*Do we need to mutate the argument?*
 
 ## Call-by-constant-reference
 
@@ -96,15 +92,10 @@ restricts us from transforming the data of the argument within the function
 scope. Why would this be useful? Looking back at the function `getRandomItem`,
 the expected behavior of this function is to simply retrieve some element from
 the vector being passed in. We do not expect the underlying data of the vector
-to change in any way. So we would change its function signature to
+to change in any way. So we would change its function signature like so
 
 ```cpp
-#include <string>
-#include <vector>
-
-using namespace std;
-
-string getRandomItem(const vector<string> &strArr);
+std::string getRandomItem(const std::vector<std::string> &arr);
 ```
 
 ## Call-by-rvalue-reference
@@ -113,37 +104,33 @@ This is perhaps the most confusing passing convention in C++. To get a better
 understanding of it we will have to take a slight detour and discuss reference
 types to some detail.
 
-### Lvalues and Rvalues
+### Lvalues & Rvalues
 
 - **lvalue**: An expression that identifies a *non-temporary object*.
 - **rvalue**: An expression that identifies a *temporary object* or is itself
 a value that is not associated with an object.
 
-This might not be the clearest definition so let's consider this example.
+For example consider the following code.
 
 ```cpp
-#include <string>
-#include <vector>
+std::vector<std::string> arr(3); // arr is an lvalue, 3 is an rvalue
 
-using namespace std;
+const int x = 2; // x is an immutable lvalue, 2 is an rvalue
 
-vector<string> arr(3);      // arr is an lvalue, 3 is an rvalue
+int y; // y is an lvalue
 
-const int x = 2;            // x is an immutable lvalue, 2 is an rvalue
+int z = x + y; // z is an lvalue, the expression (x + y) is an rvalue
 
-int y;                      // y is an lvalue
-int z = x + y;              // z is an lvalue, the expression (x + y) is an rvalue
+std::string str = "foo"; // str is an lvalue, "foo" is an rvalue
 
-string str = "foo";         // str is an lvalue, "foo" is an rvalue
-
-vector<string> *ptr = &arr; // *ptr is an lvalue, &arr is an rvalue
+std::vector<std::string> *ptr = &arr; // *ptr is an lvalue, &arr is an rvalue
 ```
 
 Now, a **reference type** allows us to define a new name for an existing value.
 As of C++11 we have two distinct types of references, **lvalue references** and
 **rvalue references**.
 
-- **lvalue reference**: a synonym (or alias) for the object it references
+- **lvalue reference**: a synonym or alias for the object it references
 - **rvalue reference**: has the same characteristics as an lvalue reference, but
 it is able to reference an rvalue too
 
@@ -163,9 +150,6 @@ bool cond = (&str == &refStr);   // evaluate to true since refStr and str are th
 
 string &bad = "hello";           // an illegal operation since "hello" is not a mutable lvalue
 string &bad2 = str + "";         // also illegal since str + "" is an rvalue
-
-const string& notBad = "hello";  // a legal operation as const lvalue references can bind to rvalues
-
 string &sub = str.substr(0, 4);  // also illegal since substr() does not evaluate to an lvalue
 
 string &&notBad = "hello";       // legal operation since "hello" is an rvalue
@@ -175,106 +159,14 @@ string &&sub = str.substr(0, 4); // also legal for the same reasons as before
 
 The question now becomes why and in what situations do we use lvalue and rvalue
 references? Well, we can begin to explore this by first looking at lvalue
-references since they are the easiest to understand.
+references since they are the most clear to understand.
 
 #### Lvalue references use cases
 
-1. **Aliasing of complicated names**. Consider the program
-
-```cpp
-#include <algorithm>
-#include <vector>
-
-using namespace std;
-
-auto &refList = theLists[myHash(x, theLists.size())];
-
-if (find(begin(refList), end(refList), x) != end(refList))
-    return false;
-
-refList.push_back(x);
-```
-
-We have here that `refList` is a reference to the, obvious, complicated
-expression `theLists[myHash(x, theLists.size())]`. Essentially, using
-an lvalue reference simplifies the code complexity when reading it.
-
-**Note**: if `refList` was not an lvalue reference
-
-```cpp
-auto refList = theLists[myHash(x, theLists.size())];
-```
-
-then if and when we call `push_back` we would not be appending to the original,
-instead the operation would be applied to the copy `refList`.
-
-2. **Range based `for` loops**. As of C++11 range based `for` loops are part of
-the C++ standard. Suppose we have a program where we want to increment the
-values of an array. Typically we could just iterate over the indices of the
-array and increment at each step
-
-```cpp
-for (int i{0}; i < arr.size(); ++i)
-    arr[i] += 1;
-```
-
-However, a more simple solution exists through the use of lvalue references
-
-```cpp
-for (auto &x : arr)
-    x += 1;
-```
-
-**Note**: again we must use an lvalue reference because we do not want a copy of
-each element in `arr` but rather a value that points to the underlying data for
-each element in `arr`.
-
-3. **Avoid a copy**. We have already discussed this prior but is worth
-stating explicitly for the sake of completion. To keep it brief, reference
-variables are often used to avoid copying an object between the function-call
-boundary. Specifically in either the function signature or in the function
-return, which we will discuss in the next section.
-
-## Call-by-rvalue-reference (cont.)
-
-Now that we have gone over lvalues and rvalues in more detail, we have only
-talked about how lvalues are used. The usage of rvalues was left out due to the
-unintuitive nature surrounding them. But with our added knowledge it is time to
-come back to the last passing convention in C++ that uses *rvalue references*.
-
-The main idea lies in the nature of what an rvalue is. As we know, rvalues
-store data for a temporary object that will be destroyed at some later time
-during the code. Because of this, instead of copying data it's more efficient
-to move the data from this temporary object.
-
-**Note**: the moving of data falls under the concept of **move semantics** in
-the C++ standard which we will discuss in a future section.
-
-With this in mind, we can overload a function that might take as input both an
-lvalue and rvalue. Recall the function `getRandomItem`, we can overload the
-function's signature as
+1. **Aliasing of complicated names**. Suppose we have the following code
 
 ```cpp
 #include <iostream>
-#include <string>
-#include <vector>
-
-using namespace std;
-
-string getRandomItem(const vector<string> &strArr); // return a random item from the lvalue strArr
-string getRandomItem(vector<string> &&strArr);      // return a random item from the rvalue strArr
-
-vector<string> v{"hello", "world"};
-
-cout << getRandomItem(v) << "\n";                   // use the lvalue method
-cout << getRandomItem({"hello", "world"}) << "\n";  // use the rvalue method
+auto &list = theLists[myHash(x, theLists.size())];
+if (std::find(
 ```
-
-where `getRandomItem` now accepts both lvalue and rvalue references depending
-on the input's type. Moreover, because the rvalue overload knows that the input
-is temporary, it can simply *move* the element out of the vector rather than
-copying it.
-
-**Note**: the most common use case of passing an rvalue reference comes up when
-defining the behavior of the assignment operator `=` and in a constructor, both
-of which will be discussed in a future section.
